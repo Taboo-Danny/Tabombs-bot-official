@@ -1,4 +1,5 @@
 import discord
+import random
 
 def handle_response(message):
     p_message = message.lower()
@@ -49,8 +50,15 @@ def handle_response(message):
             )
             return embed
         elif p_message[1:] == 'randomfact':
+            # Open and read all lines
+            with open('facts.txt', 'r') as file:
+                lines = file.readlines()
+
+            # Choose a random line
+            random_line = random.choice(lines).strip()  # .strip() removes newline and spaces
             embed = discord.Embed(
-                description = 'No facts have been collected yet, come back later',
+                title = 'Did you know?',
+                description = random_line,
                 color = discord.Color.orange()
             )
             return embed
