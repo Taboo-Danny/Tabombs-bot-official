@@ -21,7 +21,7 @@ def handle_response(message):
     if p_message == 'kys' or p_message == 'kill yourself' or p_message == 'keep yourself safe':
         return 'https://tenor.com/view/love-gif-1725081057622358733'
 
-    if p_message[0] == '<':
+    if p_message[0] == '<' and p_message[1] != '@':
         if p_message[1:] == 'help':
             embed = discord.Embed(
                 title = 'Tabombs bot commands',
