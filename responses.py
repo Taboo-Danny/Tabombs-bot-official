@@ -1,8 +1,11 @@
 import discord
 import random
+import asyncio
+
+active_sessions = set()
 
 def handle_response(message):
-    p_message = message.lower()
+    p_message = message.content.lower()
 
     if p_message == 'yogurt' or p_message == 'yo gurt':
         return 'gurt: yo!'
@@ -28,13 +31,13 @@ def handle_response(message):
                 title = 'Tabombs bot commands',
                 description = 'I am a discord bot made by Taboo Danny for experiments and shit. Here are some of my commands'
                               '\n\n**<play**'
-                              '\nEnables the user to play the guessing game, only one session can be done in a channel at a time'
+                              '\nEnables the user to play the guessing game, only one session can be done per user at a time'
                               '\n\n**<howtoplay**'
                               '\nGives you a guide on how to play the game and what to expect'
                               '\n\n**<randomfact**'
                               '\nGives you a random fact, can be about anything'
-                              '\n\n**<help**'
-                              '\nIt gives you this page, why would you use this command again',
+                              '\n\n**<invite**'
+                              '\nProvides the URL to enable users to invite me to other servers',
                 color = discord.Color.orange()
             )
             return embed
@@ -62,10 +65,12 @@ def handle_response(message):
                 color = discord.Color.orange()
             )
             return embed
-        elif p_message[1:] == 'play':
+        elif p_message[1:] == 'invite':
             embed = discord.Embed(
-                description='This feature has not been implemented yet, come back later',
-                color=discord.Color.orange()
+                title='Invite me',
+                description = 'This is my invite URL, have fun!'
+                              '\nhttps://discord.com/oauth2/authorize?client_id=900672487753412628&permissions=8&integration_type=0&scope=bot',
+                color = discord.Color.orange()
             )
             return embed
         else:
@@ -74,3 +79,55 @@ def handle_response(message):
                 color=discord.Color.orange()
             )
             return embed
+
+async def play_command(client, message):
+    user_message = message.content.lower()
+    user_id = message.author.id
+    if user_message[0] == '<' and user_message[1] != '@':
+        if user_message[1:] == 'play':
+            active_sessions.add(user_id)  # 🔒 Lock session
+
+            embed = discord.Embed(
+                description=(
+                    'These are the themes available currently. Please select one of them '
+                    '(type them exactly, not case sensitive):'
+                    '\n1. Fruits'
+                    '\n2. Countries'
+                    '\n3. Household objects'
+                ),
+                color=discord.Color.orange()
+            )
+            embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
+            await message.channel.send(embed=embed)
+
+            def check(m):
+                return (
+                        m.author == message.author and
+                        m.channel == message.channel and
+                        m.content.lower() in ['fruits', 'countries', 'household objects']
+                )
+
+            try:
+                response = await client.wait_for('message', check=check, timeout=5.0)
+                response_embed = discord.Embed(
+                    description=f'You selected: **{response.content}**',
+                    color=discord.Color.orange()
+                )
+                response_embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
+                await message.channel.send(embed=response_embed)
+
+                # Add more logic here as needed...
+
+            except asyncio.TimeoutError:
+                response_embed = discord.Embed(
+                    title="Session Timed Out",
+                    description='You took too long to respond, terminating session.',
+                    color=discord.Color.red()
+                )
+                response_embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
+                await message.channel.send(embed=response_embed)
+
+            finally:
+                active_sessions.discard(user_id)
+
+            return

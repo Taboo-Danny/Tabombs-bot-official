@@ -1,9 +1,10 @@
 import discord
 import responses
+from responses import active_sessions
 
-async def send_message(message, user_message, is_private):
+async def send_message(message, is_private):
     try:
-        response = responses.handle_response(user_message)
+        response = responses.handle_response(message)
         if is_private:
             if isinstance(response, discord.Embed):
                 await message.author.send(embed=response)
@@ -39,9 +40,15 @@ def run_discord_bot():
         if isinstance(message.channel, discord.DMChannel):
             return
 
-        username = str(message.author)
-        user_message = str(message.content)
-        channel = str(message.channel)
-        await send_message(message, user_message, False)
+        user_message = message.content.lower()
+        user_id = message.author.id
+
+        # 🔒 Block all commands if user is in an active session
+        if user_id in active_sessions:
+            return
+        if user_message[1:] == 'play':
+            await responses.play_command(client, message)
+            return
+        await send_message(message, False)
 
     client.run(TOKEN)
