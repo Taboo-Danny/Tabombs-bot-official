@@ -108,7 +108,7 @@ async def play_command(client, message):
                 )
 
             try:
-                response = await client.wait_for('message', check=check, timeout=5.0)
+                response = await client.wait_for('message', check=check, timeout=30.0)
                 response_embed = discord.Embed(
                     description=f'You selected: **{response.content}**',
                     color=discord.Color.orange()
