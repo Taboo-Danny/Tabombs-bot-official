@@ -1,8 +1,43 @@
 import discord
 import random
 import asyncio
+import json
+from spellchecker import SpellChecker
+from sentence_transformers import SentenceTransformer, util
 
 active_sessions = set()
+spell = SpellChecker()
+model = SentenceTransformer('all-mpnet-base-v2')
+
+def get_nlp_score(guess, target_word, target_embedding):
+    guess = guess.strip()
+
+    # Hard bypass for exact matches
+    if guess.lower() == target_word.lower():
+        return 100
+
+    # Convert text to mathematical vectors
+    guess_embedding = model.encode(guess)
+
+    # Calculate raw cosine similarity (returns a value usually between -1.0 and 1.0)
+    raw_score = util.cos_sim(guess_embedding, target_embedding).item()
+
+    # Mathematical Scaling to make it feel like a real game
+    min_threshold = 0.25  # Anything below this raw score is considered complete garbage
+
+    if raw_score < min_threshold:
+        final_percentage = 0
+    else:
+        # Stretch the remaining range (0.25 to 1.0) into a clean 0 to 100 scale
+        final_percentage = ((raw_score - min_threshold) / (1.0 - min_threshold)) * 100
+
+    # Cap the score at 99% so players only get 100% for the exact word
+    return max(0, min(99, int(final_percentage)))
+
+with open('word_pool.json', 'r', encoding='utf-8') as f:
+    word_data = json.load(f)
+
+word_pools = word_data['themes']
 
 def handle_response(message):
     p_message = message.content.lower()
@@ -111,6 +146,7 @@ async def play_command(client, message):
                 )
 
             try:
+                # --- YOUR EXISTING CODE STAYS EXACTLY THE SAME ---
                 response = await client.wait_for('message', check=check, timeout=30.0)
                 response_embed = discord.Embed(
                     description=f'You selected: **{response.content}**',
@@ -119,9 +155,128 @@ async def play_command(client, message):
                 response_embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
                 await message.channel.send(embed=response_embed)
 
-                # Add more logic here as needed...
+                # --- NEW LOGIC STARTS HERE ---
+
+                # 1. Fetch the target word and context based on the 2nd JSON approach
+                theme_selected = response.content.lower()
+                selected_item = random.choice(word_pools[theme_selected])
+                target_word = selected_item['target']
+                target_context = selected_item['context']
+                target_phrase = f"{target_word}: {target_context}"
+                target_embedding = model.encode(target_phrase)
+                print(f"The bot has chosen {target_word}")
+                attempts = 20
+
+                # 2. Send the NEW embed telling them to start guessing
+                game_embed = discord.Embed(
+                    title="Guess the Word!",
+                    description=(
+                        f"I have a word in mind for **{theme_selected.capitalize()}**.\n"
+                        f"Type your guess below!\n\n"
+                        f"**Attempts remaining:** {attempts}"
+                    ),
+                    color=discord.Color.blue()
+                )
+                game_embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
+
+                # 3. Setup the check for the guessing loop
+                def guess_check(m):
+                    return m.author == message.author and m.channel == message.channel
+
+                # 4. The Guessing Loop
+                while attempts > 0:
+                    try:
+                        # Wait for the user to type a guess (60 second timeout per guess)
+                        guess_msg = await client.wait_for('message', check=guess_check, timeout=60.0)
+                        guess_text = guess_msg.content.lower().strip()
+
+                        words_in_guess = guess_text.split()
+                        known_words = spell.known(words_in_guess)
+
+                        if len(known_words) != len(words_in_guess) and guess_text != target_word:
+                            attempts -= 1
+
+                            if attempts > 0:
+                                unknown_embed = discord.Embed(
+                                    title="Word Not Recognized",
+                                    description=(
+                                        f"I could not interpret your word, which gives a score of **0%**\n\n"
+                                        f"**Attempts remaining:** {attempts}"
+                                    ),
+                                    color=discord.Color.dark_grey()
+                                )
+                                unknown_embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
+                                await message.channel.send(embed=unknown_embed)
+                            else:
+                                # Handle the edge case where their gibberish was their last attempt
+                                lose_embed = discord.Embed(
+                                    title="Game Over",
+                                    description=(
+                                        f"I could not interpret your word, which gives a score of **0%**\n\n"
+                                        f"You've run out of attempts. The word was: **{target_word}**"
+                                    ),
+                                    color=discord.Color.red()
+                                )
+                                lose_embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
+                                await message.channel.send(embed=lose_embed)
+
+                            continue
+
+                        # Calculate score using your placeholder function
+                        score = get_nlp_score(guess_text, target_word, target_embedding)
+                        attempts -= 1
+
+                        # 5. Handle Outcomes and send a new message
+                        if score == 100:
+                            win_embed = discord.Embed(
+                                title="🎉 You Win!",
+                                description=(
+                                    f"I interpreted your guess as `{guess_text}`, which gives a score of **100%**!\n\n"
+                                    f"Congrats, you guessed the word: **{target_word}**"
+                                ),
+                                color=discord.Color.green()
+                            )
+                            win_embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
+                            await message.channel.send(embed=win_embed)
+                            break  # Exit the loop, game is over
+
+                        elif attempts > 0:
+                            fail_embed = discord.Embed(
+                                title="Keep Guessing!",
+                                description=(
+                                    f"I interpreted your guess as `{guess_text}`, which gives a score of **{score}%**\n\n"
+                                    f"**Attempts remaining:** {attempts}"
+                                ),
+                                color=discord.Color.orange()
+                            )
+                            fail_embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
+                            await message.channel.send(embed=fail_embed)
+
+                        else:
+                            lose_embed = discord.Embed(
+                                title="Game Over",
+                                description=(
+                                    f"I interpreted your guess as `{guess_text}`, which gives a score of **{score}%**\n\n"
+                                    f"You've run out of attempts. The word was: **{target_word}**"
+                                ),
+                                color=discord.Color.red()
+                            )
+                            lose_embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
+                            await message.channel.send(embed=lose_embed)
+
+                    except asyncio.TimeoutError:
+                        # This triggers if they take too long to make a guess
+                        timeout_embed = discord.Embed(
+                            title="Session Timed Out",
+                            description="You took too long to guess, terminating session.",
+                            color=discord.Color.red()
+                        )
+                        timeout_embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
+                        await message.channel.send(embed=timeout_embed)
+                        break  # Exit the loop
 
             except asyncio.TimeoutError:
+                # This triggers if they take too long to pick a theme (your existing logic)
                 response_embed = discord.Embed(
                     title="Session Timed Out",
                     description='You took too long to respond, terminating session.',
@@ -132,5 +287,4 @@ async def play_command(client, message):
 
             finally:
                 active_sessions.discard(user_id)
-
             return

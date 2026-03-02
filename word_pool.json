@@ -1,0 +1,34 @@
+{
+  "themes": {
+    "fruits": [
+      {
+        "target": "apple",
+        "context": "A round fruit with red or green skin and a whitish interior."
+      },
+      {
+        "target": "banana",
+        "context": "A long curved fruit that grows in clusters and has soft pulpy flesh and yellow skin."
+      }
+    ],
+    "countries": [
+      {
+        "target": "malaysia",
+        "context": "A Southeast Asian country occupying parts of the Malay Peninsula and the island of Borneo."
+      },
+      {
+        "target": "japan",
+        "context": "An island country in East Asia located in the northwest Pacific Ocean."
+      }
+    ],
+    "household objects": [
+      {
+        "target": "chair",
+        "context": "A separate seat for one person, typically with a back and four legs."
+      },
+      {
+        "target": "television",
+        "context": "A device with a screen for receiving signals and broadcasting visual and audio content."
+      }
+    ]
+  }
+}
