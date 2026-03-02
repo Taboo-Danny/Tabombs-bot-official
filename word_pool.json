@@ -1,34 +1,76 @@
 {
   "themes": {
     "fruits": [
-      {
-        "target": "apple",
-        "context": "A round fruit with red or green skin and a whitish interior."
-      },
-      {
-        "target": "banana",
-        "context": "A long curved fruit that grows in clusters and has soft pulpy flesh and yellow skin."
-      }
+      {"target": "apple", "context": "A round fruit with red or green skin and a whitish interior."},
+      {"target": "banana", "context": "A long curved fruit that grows in clusters and has soft pulpy flesh and yellow skin."},
+      {"target": "orange", "context": "A round citrus fruit with a tough bright reddish-yellow rind and edible juicy pulp."},
+      {"target": "strawberry", "context": "A small juicy red fruit with tiny edible seeds on its surface."},
+      {"target": "grape", "context": "A small green or purple berry growing in clusters on vines, often used for wine."},
+      {"target": "watermelon", "context": "A very large round fruit with a hard green rind and sweet watery red pulp."},
+      {"target": "pineapple", "context": "A large tropical fruit with a spiky yellow-brown exterior and sweet yellow flesh."},
+      {"target": "mango", "context": "A fleshy oval tropical fruit with a smooth skin and a large stony seed in the center."},
+      {"target": "blueberry", "context": "A small round dark blue berry that is sweet and often used in muffins."},
+      {"target": "kiwi", "context": "A small oval fruit with thin brown fuzzy skin and bright green flesh with black seeds."},
+      {"target": "peach", "context": "A round fruit with fuzzy yellowish-pink skin and a large hard pit."},
+      {"target": "cherry", "context": "A small round bright red fruit with a single hard stone and a long stem."},
+      {"target": "pear", "context": "A sweet yellowish or green fruit with a rounded body that narrows toward the stem."},
+      {"target": "lemon", "context": "A pale yellow oval citrus fruit with thick skin and very sour juice."},
+      {"target": "coconut", "context": "A large seed of a palm tree with a hard brown shell and edible white meat and milk."},
+      {"target": "raspberry", "context": "A small soft red fruit composed of many tiny seed-containing parts."},
+      {"target": "pomegranate", "context": "A round red fruit with a thick skin containing many edible juicy red seeds."},
+      {"target": "avocado", "context": "A pear-shaped green fruit with a large pit and creamy oily flesh."},
+      {"target": "durian", "context": "A large spiky tropical fruit known for its very strong smell and custard-like flesh."},
+      {"target": "papaya", "context": "A long tropical fruit with orange flesh and many small black seeds inside."},
+      {"target": "lime", "context": "A small green citrus fruit that is very sour and used in drinks or cooking."},
+      {"target": "plum", "context": "A smooth-skinned oval fruit that is typically purple or reddish with a stone."}
     ],
     "countries": [
-      {
-        "target": "malaysia",
-        "context": "A Southeast Asian country occupying parts of the Malay Peninsula and the island of Borneo."
-      },
-      {
-        "target": "japan",
-        "context": "An island country in East Asia located in the northwest Pacific Ocean."
-      }
+      {"target": "malaysia", "context": "A Southeast Asian country occupying parts of the Malay Peninsula and the island of Borneo."},
+      {"target": "japan", "context": "An island country in East Asia located in the northwest Pacific Ocean."},
+      {"target": "brazil", "context": "The largest country in South America, known for the Amazon rainforest and carnival."},
+      {"target": "canada", "context": "A large North American country stretching from the US border to the Arctic Circle."},
+      {"target": "france", "context": "A Western European country famous for its wine, cheese, and the Eiffel Tower."},
+      {"target": "australia", "context": "A vast country and continent surrounded by the Indian and Pacific oceans."},
+      {"target": "egypt", "context": "A country in Northeast Africa famous for its ancient pyramids and the Nile river."},
+      {"target": "germany", "context": "A Central European country known for its history, engineering, and beer festivals."},
+      {"target": "italy", "context": "A Mediterranean country in Europe shaped like a boot, famous for pasta and pizza."},
+      {"target": "india", "context": "A large South Asian country known for its diverse culture and the Taj Mahal."},
+      {"target": "china", "context": "The world's most populous country in East Asia, famous for the Great Wall."},
+      {"target": "russia", "context": "The largest country in the world by area, spanning across Eastern Europe and Northern Asia."},
+      {"target": "mexico", "context": "A North American country known for its spicy food, beaches, and Aztec ruins."},
+      {"target": "thailand", "context": "A Southeast Asian country known for tropical beaches, royal palaces, and ornate temples."},
+      {"target": "united kingdom", "context": "An island nation in Europe consisting of England, Scotland, Wales, and Northern Ireland."},
+      {"target": "south korea", "context": "An East Asian nation on the southern half of the Korean Peninsula known for technology."},
+      {"target": "argentina", "context": "A large South American country known for the tango and the Andes mountains."},
+      {"target": "south africa", "context": "A country on the southernmost tip of the African continent known for varied ecosystems."},
+      {"target": "spain", "context": "A European country on the Iberian Peninsula known for flamenco and tapas."},
+      {"target": "turkey", "context": "A transcontinental country located mainly on the Anatolian Peninsula in Western Asia."},
+      {"target": "switzerland", "context": "A mountainous Central European country known for its lakes, villages, and the high Alps."},
+      {"target": "greece", "context": "A country in Southeast Europe with thousands of islands and ancient historical sites."}
     ],
     "household objects": [
-      {
-        "target": "chair",
-        "context": "A separate seat for one person, typically with a back and four legs."
-      },
-      {
-        "target": "television",
-        "context": "A device with a screen for receiving signals and broadcasting visual and audio content."
-      }
+      {"target": "chair", "context": "A separate seat for one person, typically with a back and four legs."},
+      {"target": "television", "context": "A device with a screen for receiving signals and broadcasting visual and audio content."},
+      {"target": "refrigerator", "context": "A large kitchen appliance used for keeping food and drinks cold."},
+      {"target": "microwave", "context": "A small oven that cooks or heats food very quickly using electromagnetic waves."},
+      {"target": "lamp", "context": "A device for giving light, consisting of an electric bulb and a shade."},
+      {"target": "bed", "context": "A piece of furniture for sleep or rest, typically with a mattress and pillows."},
+      {"target": "table", "context": "A piece of furniture with a flat top and legs, used for eating or working."},
+      {"target": "vacuum cleaner", "context": "An electrical machine used for cleaning floors by sucking up dust and dirt."},
+      {"target": "toaster", "context": "A small kitchen appliance used for browning slices of bread."},
+      {"target": "mirror", "context": "A surface of glass that reflects a clear image of whatever is in front of it."},
+      {"target": "sofa", "context": "A long upholstered seat with a back and arms, designed for multiple people."},
+      {"target": "bookshelf", "context": "A piece of furniture with shelves used for storing or displaying books."},
+      {"target": "washing machine", "context": "A large appliance used for cleaning clothes and linens automatically."},
+      {"target": "clock", "context": "An instrument used for measuring and showing the time."},
+      {"target": "pillow", "context": "A rectangular cloth bag filled with soft material, used to support the head in bed."},
+      {"target": "curtain", "context": "A piece of hanging cloth used to block light or provide privacy at a window."},
+      {"target": "fan", "context": "A device used to create a current of air for cooling purposes."},
+      {"target": "kettle", "context": "A metal or plastic container with a handle and spout for boiling water."},
+      {"target": "iron", "context": "A small appliance with a flat heated metal base used to remove wrinkles from clothes."},
+      {"target": "shower", "context": "A bathroom fixture that sprays water over a person to wash their body."},
+      {"target": "broom", "context": "A cleaning tool consisting of stiff fibers attached to a long handle, used for sweeping."},
+      {"target": "trash can", "context": "A container used for holding waste or garbage until it is collected."}
     ]
   }
 }

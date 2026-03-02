@@ -4,35 +4,62 @@ import asyncio
 import json
 from spellchecker import SpellChecker
 from sentence_transformers import SentenceTransformer, util
+import nltk
+from nltk.corpus import wordnet
 
 active_sessions = set()
 spell = SpellChecker()
 model = SentenceTransformer('all-mpnet-base-v2')
 
-def get_nlp_score(guess, target_word, target_embedding):
+
+def get_nlp_score(guess, target_word, target_context, target_phrase_embedding, target_word_embedding):
     guess = guess.strip()
 
-    # Hard bypass for exact matches
+    # 1. Hard bypass for exact matches
     if guess.lower() == target_word.lower():
         return 100
 
-    # Convert text to mathematical vectors
+    # Convert the raw guess to a vector
     guess_embedding = model.encode(guess)
 
-    # Calculate raw cosine similarity (returns a value usually between -1.0 and 1.0)
-    raw_score = util.cos_sim(guess_embedding, target_embedding).item()
+    # 2. Vector Math: Compare against the phrase AND the raw word
+    score_vs_phrase = util.cos_sim(guess_embedding, target_phrase_embedding).item()
+    score_vs_word = util.cos_sim(guess_embedding, target_word_embedding).item()
 
-    # Mathematical Scaling to make it feel like a real game
-    min_threshold = 0.25  # Anything below this raw score is considered complete garbage
+    # Take whichever semantic score is higher
+    best_raw_score = max(score_vs_phrase, score_vs_word)
 
-    if raw_score < min_threshold:
-        final_percentage = 0
+    # Lowered threshold to 0.15 to be more forgiving to associated adjectives
+    min_threshold = 0.15
+
+    if best_raw_score < min_threshold:
+        semantic_percentage = 0
     else:
-        # Stretch the remaining range (0.25 to 1.0) into a clean 0 to 100 scale
-        final_percentage = ((raw_score - min_threshold) / (1.0 - min_threshold)) * 100
+        semantic_percentage = ((best_raw_score - min_threshold) / (1.0 - min_threshold)) * 100
 
-    # Cap the score at 99% so players only get 100% for the exact word
-    return max(0, min(99, int(final_percentage)))
+    final_score = int(semantic_percentage)
+
+    # 3. The "Clue Overlap" Bonus
+    # If the user guesses a prominent word that actually exists in your JSON context sentence!
+    # We ignore tiny words (length < 3) like "a", "is", "of"
+    if len(guess) > 3 and guess.lower() in target_context.lower():
+        # Give them an automatic floor of 65% for finding a clue, unless their semantic score is somehow higher
+        final_score = max(final_score, 65)
+
+    # Cap at 99%
+    return max(0, min(99, final_score))
+
+def expand_guess(guess_word):
+    # Search the dictionary for the word
+    synsets = wordnet.synsets(guess_word)
+
+    if synsets:
+        # Grab the definition of the most common usage of the word
+        definition = synsets[0].definition()
+        return f"{guess_word}: {definition}"
+
+    # If the word isn't in the dictionary (e.g., slang), just return the raw word
+    return guess_word
 
 with open('word_pool.json', 'r', encoding='utf-8') as f:
     word_data = json.load(f)
@@ -155,15 +182,14 @@ async def play_command(client, message):
                 response_embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
                 await message.channel.send(embed=response_embed)
 
-                # --- NEW LOGIC STARTS HERE ---
-
                 # 1. Fetch the target word and context based on the 2nd JSON approach
                 theme_selected = response.content.lower()
                 selected_item = random.choice(word_pools[theme_selected])
                 target_word = selected_item['target']
                 target_context = selected_item['context']
                 target_phrase = f"{target_word}: {target_context}"
-                target_embedding = model.encode(target_phrase)
+                target_phrase_embedding = model.encode(target_phrase)
+                target_word_embedding = model.encode(target_word)  # Just the word itself
                 print(f"The bot has chosen {target_word}")
                 attempts = 20
 
@@ -178,6 +204,7 @@ async def play_command(client, message):
                     color=discord.Color.blue()
                 )
                 game_embed.set_author(name=message.author.name, icon_url=message.author.avatar.url)
+                await message.channel.send(embed=game_embed)
 
                 # 3. Setup the check for the guessing loop
                 def guess_check(m):
@@ -222,8 +249,14 @@ async def play_command(client, message):
 
                             continue
 
-                        # Calculate score using your placeholder function
-                        score = get_nlp_score(guess_text, target_word, target_embedding)
+                        # Calculate score using the multi-target NLP engine
+                        score = get_nlp_score(
+                            guess_text,
+                            target_word,
+                            target_context,
+                            target_phrase_embedding,
+                            target_word_embedding
+                        )
                         attempts -= 1
 
                         # 5. Handle Outcomes and send a new message
