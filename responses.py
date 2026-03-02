@@ -22,8 +22,11 @@ def handle_response(message):
     if 'speed' in p_message or 'homeless' in p_message:
         return 'https://tenor.com/view/ishowspeed-try-not-to-laugh-gif-7682731162751353849'
 
-    if p_message == 'kys' or p_message == 'kill yourself' or p_message == 'keep yourself safe':
+    if p_message == 'kys' or p_message == 'kill yourself' or p_message == 'keep yourself safe' or p_message == 'sky ginger':
         return 'https://tenor.com/view/love-gif-1725081057622358733'
+
+    if 'reyes' in p_message or 'gayes' in p_message:
+        return 'https://cdn.discordapp.com/attachments/867612417993998338/1392929172690829383/IMG-20240411-WA0009.jpg?ex=687151e2&is=68700062&hm=e3fa1fed8d03fdbd1395e18edb7a1b766b15023e72808c87de8f14024004fe8f&'
 
     if p_message[0] == '<' and p_message[1] != '@':
         if p_message[1:] == 'help':
