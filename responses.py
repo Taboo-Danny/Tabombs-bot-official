@@ -2,34 +2,96 @@ import discord
 import random
 import asyncio
 import json
+import math
+import aiohttp  # Replaces requests, built into discord.py
 from spellchecker import SpellChecker
-from sentence_transformers import SentenceTransformer, util
-import nltk
-from nltk.corpus import wordnet
 
 active_sessions = set()
 spell = SpellChecker()
-model = SentenceTransformer('all-mpnet-base-v2')
 
+# Add your Hugging Face API Token here!
+HF_API_KEY = "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"
+API_URL = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-mpnet-base-v2"
 
-def get_nlp_score(guess, target_word, target_context, target_phrase_embedding, target_word_embedding):
+# Load the JSON data
+with open('word_pool.json', 'r', encoding='utf-8') as f:
+    word_data = json.load(f)
+
+word_pools = word_data['themes']
+
+# Build a fast dictionary of coordinates from your JSON pool
+country_coords = {}
+for item in word_pools.get('countries', []):
+    country_coords[item['target']] = (item.get('lat', 0), item.get('lon', 0))
+
+def calculate_distance(lat1, lon1, lat2, lon2):
+    R = 6371.0  # Earth radius in kilometers
+    dlat = math.radians(lat2 - lat1)
+    dlon = math.radians(lon2 - lon1)
+    a = math.sin(dlat / 2)**2 + math.cos(math.radians(lat1)) * math.cos(math.radians(lat2)) * math.sin(dlon / 2)**2
+    c = 2 * math.atan2(math.sqrt(a), math.sqrt(1 - a))
+    return int(R * c)  # Returns distance in km
+
+# Added "channel" as a parameter so we can send UI updates
+async def get_nlp_score(guess, target_word, target_context, channel=None):
     guess = guess.strip()
 
-    # 1. Hard bypass for exact matches
     if guess.lower() == target_word.lower():
         return 100
 
-    # Convert the raw guess to a vector
-    guess_embedding = model.encode(guess)
+    target_phrase = f"{target_word}: {target_context}"
+    payload = {
+        "inputs": {
+            "source_sentence": guess,
+            "sentences": [target_phrase, target_word]
+        }
+    }
+    headers = {"Authorization": f"Bearer {HF_API_KEY}"}
 
-    # 2. Vector Math: Compare against the phrase AND the raw word
-    score_vs_phrase = util.cos_sim(guess_embedding, target_phrase_embedding).item()
-    score_vs_word = util.cos_sim(guess_embedding, target_word_embedding).item()
+    best_raw_score = 0
+    max_retries = 3  # Try a maximum of 3 times before giving up
 
-    # Take whichever semantic score is higher
-    best_raw_score = max(score_vs_phrase, score_vs_word)
+    # --- THE RETRY LOOP ---
+    for attempt in range(max_retries):
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(API_URL, headers=headers, json=payload) as response:
 
-    # Lowered threshold to 0.15 to be more forgiving to associated adjectives
+                    if response.status == 200:
+                        # Success! The model is awake and did the math.
+                        scores = await response.json()
+                        best_raw_score = max(scores)
+                        break  # Break out of the retry loop
+
+                    elif response.status == 503:
+                        # The model is asleep. Grab the estimated wait time.
+                        error_data = await response.json()
+                        wait_time = error_data.get("estimated_time", 15.0)
+
+                        if channel:
+                            # Tell the user we are waking up the AI
+                            temp_embed = discord.Embed(
+                                description=f"⏳ **Waking up the AI...** this will take about {int(wait_time)} seconds.",
+                                color=discord.Color.dark_grey()
+                            )
+                            temp_msg = await channel.send(embed=temp_embed)
+
+                        # Pause the bot for the exact time Hugging Face requested
+                        await asyncio.sleep(wait_time)
+
+                        if channel:
+                            # Delete the temporary message before trying again
+                            await temp_msg.delete()
+
+                    else:
+                        print(f"API Error: {response.status}")
+                        return 0  # Failsafe
+
+        except Exception as e:
+            print(f"Request Error: {e}")
+            return 0  # Failsafe
+
+    # --- THE MATH SCALING ---
     min_threshold = 0.15
 
     if best_raw_score < min_threshold:
@@ -39,32 +101,10 @@ def get_nlp_score(guess, target_word, target_context, target_phrase_embedding, t
 
     final_score = int(semantic_percentage)
 
-    # 3. The "Clue Overlap" Bonus
-    # If the user guesses a prominent word that actually exists in your JSON context sentence!
-    # We ignore tiny words (length < 3) like "a", "is", "of"
     if len(guess) > 3 and guess.lower() in target_context.lower():
-        # Give them an automatic floor of 65% for finding a clue, unless their semantic score is somehow higher
         final_score = max(final_score, 65)
 
-    # Cap at 99%
     return max(0, min(99, final_score))
-
-def expand_guess(guess_word):
-    # Search the dictionary for the word
-    synsets = wordnet.synsets(guess_word)
-
-    if synsets:
-        # Grab the definition of the most common usage of the word
-        definition = synsets[0].definition()
-        return f"{guess_word}: {definition}"
-
-    # If the word isn't in the dictionary (e.g., slang), just return the raw word
-    return guess_word
-
-with open('word_pool.json', 'r', encoding='utf-8') as f:
-    word_data = json.load(f)
-
-word_pools = word_data['themes']
 
 def handle_response(message):
     p_message = message.content.lower()
@@ -187,9 +227,6 @@ async def play_command(client, message):
                 selected_item = random.choice(word_pools[theme_selected])
                 target_word = selected_item['target']
                 target_context = selected_item['context']
-                target_phrase = f"{target_word}: {target_context}"
-                target_phrase_embedding = model.encode(target_phrase)
-                target_word_embedding = model.encode(target_word)  # Just the word itself
                 print(f"The bot has chosen {target_word}")
                 attempts = 20
 
@@ -249,14 +286,25 @@ async def play_command(client, message):
 
                             continue
 
-                        # Calculate score using the multi-target NLP engine
-                        score = get_nlp_score(
-                            guess_text,
-                            target_word,
-                            target_context,
-                            target_phrase_embedding,
-                            target_word_embedding
-                        )
+                        # --- HYBRID SCORING ENGINE ---
+                        distance_km = None  # Keep track of this for the UI
+
+                        if theme_selected == "countries" and guess_text in country_coords:
+                            # 1. It's a country guess! Use Geographical Distance Scoring
+                            target_lat, target_lon = country_coords[target_word]
+                            guess_lat, guess_lon = country_coords[guess_text]
+
+                            distance_km = calculate_distance(guess_lat, guess_lon, target_lat, target_lon)
+
+                            if distance_km == 0:
+                                score = 100
+                            else:
+                                # Map the distance to a percentage (Max penalty around 15,000 km)
+                                score = max(0, int(100 - (distance_km / 150)))
+                        else:
+                            # 2. It's an adjective or a different theme! Use Hugging Face API
+                            score = await get_nlp_score(guess_text, target_word, target_context, message.channel)
+
                         attempts -= 1
 
                         # 5. Handle Outcomes and send a new message
@@ -274,10 +322,16 @@ async def play_command(client, message):
                             break  # Exit the loop, game is over
 
                         elif attempts > 0:
+                            # Create a dynamic message depending on if it was a distance guess or an NLP guess
+                            if distance_km is not None:
+                                feedback_msg = f"I interpreted your guess as `{guess_text}`. It is **{distance_km} km** away, giving a score of **{score}%**"
+                            else:
+                                feedback_msg = f"I interpreted your guess as `{guess_text}`, which gives a score of **{score}%**"
+
                             fail_embed = discord.Embed(
                                 title="Keep Guessing!",
                                 description=(
-                                    f"I interpreted your guess as `{guess_text}`, which gives a score of **{score}%**\n\n"
+                                    f"{feedback_msg}\n\n"
                                     f"**Attempts remaining:** {attempts}"
                                 ),
                                 color=discord.Color.orange()
@@ -286,10 +340,16 @@ async def play_command(client, message):
                             await message.channel.send(embed=fail_embed)
 
                         else:
+                            # Dynamic message for losing on the last attempt
+                            if distance_km is not None:
+                                feedback_msg = f"I interpreted your guess as `{guess_text}`. It is **{distance_km} km** away, giving a score of **{score}%**"
+                            else:
+                                feedback_msg = f"I interpreted your guess as `{guess_text}`, which gives a score of **{score}%**"
+
                             lose_embed = discord.Embed(
                                 title="Game Over",
                                 description=(
-                                    f"I interpreted your guess as `{guess_text}`, which gives a score of **{score}%**\n\n"
+                                    f"{feedback_msg}\n\n"
                                     f"You've run out of attempts. The word was: **{target_word}**"
                                 ),
                                 color=discord.Color.red()
