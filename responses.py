@@ -118,17 +118,11 @@ def handle_response(message):
     if p_message == 'taboo':
         return 'Danny'
 
-    if 'sex' in p_message:
-        return 'Hey guys, did you know that in terms of male human and female Pokémon breeding, Vaporeon is the most compatible Pokémon for humans? Not only are they in the field egg group, which is mostly comprised of mammals, Vaporeon are an average of 3”03’ tall and 63.9 pounds, this means they’re large enough to be able handle human dicks, and with their impressive Base Stats for HP and access to Acid Armor, you can be rough with one. Due to their mostly water based biology, there’s no doubt in my mind that an aroused Vaporeon would be incredibly wet, so wet that you could easily have sex with one for hours without getting sore. They can also learn the moves Attract, Baby-Doll Eyes, Captivate, Charm, and Tail Whip, along with not having fur to hide nipples, so it’d be incredibly easy for one to get you in the mood. With their abilities Water Absorb and Hydration, they can easily recover from fatigue with enough water. No other Pokémon comes close to this level of compatibility. Also, fun fact, if you pull out enough, you can make your Vaporeon turn white. Vaporeon is literally built for human dick. Ungodly defense stat+high HP pool+Acid Armor means it can take cock all day, all shapes and sizes and still come for more'
-
     if 'speed' in p_message or 'homeless' in p_message:
         return 'https://tenor.com/view/ishowspeed-try-not-to-laugh-gif-7682731162751353849'
 
     if p_message == 'kys' or p_message == 'kill yourself' or p_message == 'keep yourself safe' or p_message == 'sky ginger':
         return 'https://tenor.com/view/love-gif-1725081057622358733'
-
-    if 'reyes' in p_message or 'gayes' in p_message:
-        return 'https://cdn.discordapp.com/attachments/867612417993998338/1392929172690829383/IMG-20240411-WA0009.jpg?ex=687151e2&is=68700062&hm=e3fa1fed8d03fdbd1395e18edb7a1b766b15023e72808c87de8f14024004fe8f&'
 
     if p_message[0] == '<' and p_message[1] != '@':
         if p_message[1:] == 'help':
