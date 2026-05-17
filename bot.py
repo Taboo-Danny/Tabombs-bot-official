@@ -1,6 +1,11 @@
 import discord
 import responses
 from responses import active_sessions
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
+TOKEN = os.getenv('DISCORD_BOT_TOKEN')
 
 async def send_message(message, is_private):
     try:
@@ -19,7 +24,6 @@ async def send_message(message, is_private):
         print(e)
 
 def run_discord_bot():
-    TOKEN = 'OTAwNjcyNDg3NzUzNDEyNjI4.Gq3lU8.Sy4EUpQAiRNsqgzy3Ko9sRFL__w21LUb4bYfnc'
     intents = discord.Intents.default()
     intents.message_content = True  # Needed to read message content
     client = discord.Client(intents = intents)

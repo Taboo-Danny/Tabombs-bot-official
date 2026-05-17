@@ -5,13 +5,16 @@ import json
 import math
 import aiohttp  # Replaces requests, built into discord.py
 from spellchecker import SpellChecker
+from dotenv import load_dotenv
+import os
+
+load_dotenv()
 
 active_sessions = set()
 spell = SpellChecker()
 
-# Add your Hugging Face API Token here!
-HF_API_KEY = "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"
-API_URL = "https://router.huggingface.co/hf-inference/models/sentence-transformers/all-mpnet-base-v2"
+HF_API_KEY = os.getenv('HF_API_KEY')
+API_URL = os.getenv('API_URL')
 
 # Load the JSON data
 with open('word_pool.json', 'r', encoding='utf-8') as f:
