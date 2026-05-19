@@ -7,6 +7,8 @@ import aiohttp  # Replaces requests, built into discord.py
 from spellchecker import SpellChecker
 from dotenv import load_dotenv
 import os
+import re
+import difflib
 
 load_dotenv()
 
@@ -128,7 +130,83 @@ def handle_response(message):
         return 'https://tenor.com/view/love-gif-1725081057622358733'
 
     if p_message[0] == '<' and p_message[1] != '@':
-        if p_message[1:] == 'help':
+        if p_message.startswith('<slangdict'):
+            query = p_message[len('<slangdict'):].strip()
+            if not query:
+                embed = discord.Embed(
+                    description="⚠️ Please specify a slang word. Example: `<slangdict rizz`",
+                    color=discord.Color.orange()
+                )
+                return embed
+
+            try:
+                with open('dictionary.json', 'r', encoding='utf-8') as f:
+                    slang_data = json.load(f)
+                slang_words = slang_data.get('words', {})
+            except Exception as e:
+                print(f"Error loading dictionary: {e}")
+                embed = discord.Embed(
+                    description="❌ Failed to load the slang dictionary.",
+                    color=discord.Color.red()
+                )
+                return embed
+
+            matched_word = None
+            word_info = None
+
+            # 1. Exact match (case-insensitive)
+            if query in slang_words:
+                matched_word = query
+                word_info = slang_words[query]
+            else:
+                # 2. Regex-based fuzzy matching
+                for word in slang_words:
+                    word_pattern = "".join(f"{re.escape(c)}+" for c in word)
+                    query_pattern = "".join(f"{re.escape(c)}+" for c in query)
+                    if (re.match(f"^{word_pattern}$", query) or
+                        re.match(f"^{query_pattern}$", word) or
+                        re.search(re.escape(query), word)):
+                        matched_word = word
+                        word_info = slang_words[word]
+                        break
+
+            # 3. Fallback to difflib close matches if regex/exact didn't work
+            if not matched_word:
+                close_matches = difflib.get_close_matches(query, list(slang_words.keys()), n=3, cutoff=0.4)
+                if close_matches:
+                    suggestions = ", ".join(f"`{w}`" for w in close_matches)
+                    embed = discord.Embed(
+                        description=f"❌ Slang word `{query}` not found.\n\nDid you mean: {suggestions}?",
+                        color=discord.Color.orange()
+                    )
+                else:
+                    embed = discord.Embed(
+                        description=f"❌ Slang word `{query}` is too far off and could not be found.",
+                        color=discord.Color.red()
+                    )
+                return embed
+
+            # Format the output beautifully as requested
+            embed = discord.Embed(
+                title=f'"{matched_word}"',
+                color=discord.Color.orange()
+            )
+            
+            description_lines = []
+            definitions = word_info.get("definitions", [])
+            for i, definition in enumerate(definitions, 1):
+                meaning = definition.get("meaning", "").strip().strip('"')
+                sentence = definition.get("sentence", "").strip()
+                
+                description_lines.append(f"**{i}. {meaning}**")
+                if sentence:
+                    description_lines.append(f"{sentence}")
+                description_lines.append("") # Spacer
+                
+            embed.description = "\n".join(description_lines).strip()
+            return embed
+
+        elif p_message[1:] == 'help':
             embed = discord.Embed(
                 title = 'Tabombs bot commands',
                 description = 'I am a discord bot made by Taboo Danny for experiments and shit. Here are some of my commands'
@@ -138,6 +216,8 @@ def handle_response(message):
                               '\nGives you a guide on how to play the game and what to expect'
                               '\n\n**<randomfact**'
                               '\nGives you a random fact, can be about anything'
+                              '\n\n**<slangdict [word]**'
+                              '\nRetrieves the meanings and sentences of gen Z/alpha/beta slangs within it\'s dictionary.'
                               '\n\n**<invite**'
                               '\nProvides the URL to enable users to invite me to other servers',
                 color = discord.Color.orange()
