@@ -57,7 +57,7 @@ async def uptime_checker(client):
                 
                 embed = discord.Embed(
                     title="🚀 Bot Uptime Milestone!",
-                    description="Your bot has been up and running continuously for **3 days**! 🎉",
+                    description="I've been up for at least 3 days now, do refresh the KataBump server",
                     color=discord.Color.green()
                 )
                 await owner.send(embed=embed)
