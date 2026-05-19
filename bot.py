@@ -3,6 +3,8 @@ import responses
 from responses import active_sessions
 from dotenv import load_dotenv
 import os
+import asyncio
+import time
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_BOT_TOKEN')
@@ -36,6 +38,33 @@ def run_discord_bot():
             activity = discord.Game('Type "<help" for my list of commands')  # Other options: Game, Streaming, Listening, Watching
         )
         print(f'{client.user} has connected to Discord!')
+        
+        # Start background task to check uptime and DM the owner after 3 days
+        asyncio.create_task(uptime_checker(client))
+
+async def uptime_checker(client):
+    await client.wait_until_ready()
+    start_time = time.time()
+    three_days = 3 * 24 * 60 * 60  # 259200 seconds
+    sent = False
+    
+    while not client.is_closed():
+        elapsed = time.time() - start_time
+        if elapsed >= three_days and not sent:
+            try:
+                app_info = await client.application_info()
+                owner = app_info.owner
+                
+                embed = discord.Embed(
+                    title="🚀 Bot Uptime Milestone!",
+                    description="Your bot has been up and running continuously for **3 days**! 🎉",
+                    color=discord.Color.green()
+                )
+                await owner.send(embed=embed)
+                sent = True
+            except Exception as e:
+                print(f"Failed to send uptime DM to owner: {e}")
+        await asyncio.sleep(3600)  # Check every hour
 
     @client.event
     async def on_message(message):
